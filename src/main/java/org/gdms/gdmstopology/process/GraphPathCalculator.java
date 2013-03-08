@@ -158,11 +158,7 @@ public class GraphPathCalculator {
      * @return A shortest path.
      */
     private static GraphPath getPath(Graph graph, int source, int target) {
-        GraphPath path =
-                new DijkstraShortestPath(graph, source, target).getPath();
-        System.out.println(path);
-
-        return path;
+        return new DijkstraShortestPath(graph, source, target).getPath();
     }
 
     /**
@@ -194,8 +190,13 @@ public class GraphPathCalculator {
                 dsf,
                 pathMetadata);
 
-        // Store the path in the DiskBufferDriver.
-        storePath(path, graph, shortestPathDriver);
+        if (path == null) {
+            // If the path is empty, there is no need to store it.
+            System.out.println("The path is empty!!");
+        } else {
+            // Otherwise, we store it in the DiskBufferDriver.
+            storePath(path, graph, shortestPathDriver);
+        }
 
         // Clean up.
         cleanUp(shortestPathDriver, pm);
@@ -256,10 +257,6 @@ public class GraphPathCalculator {
             DiskBufferDriver driver) throws DriverException {
 
         long start = System.currentTimeMillis();
-
-        if (path.getWeight() == 0.0) {
-            System.out.println("The path is empty!!");
-        }
 
         Iterator<Edge> it = path.getEdgeList().iterator();
 
