@@ -32,14 +32,9 @@
  */
 package org.gdms.gdmstopology.process;
 
-import com.graphhopper.routing.DijkstraBidirectionRef;
-import com.graphhopper.routing.Path;
-import com.graphhopper.routing.util.CarFlagEncoder;
-import com.graphhopper.storage.Graph;
-import com.graphhopper.util.EdgeIterator;
-import com.graphhopper.util.GHUtility;
-import gnu.trove.iterator.TIntIterator;
-import gnu.trove.list.TIntList;
+import com.graphhopper.sna.model.Edge;
+import org.jgrapht.Graph;
+import java.util.Iterator;
 import org.gdms.data.DataSourceFactory;
 import org.gdms.data.indexes.IndexException;
 import org.gdms.data.schema.DefaultMetadata;
@@ -55,6 +50,9 @@ import org.gdms.gdmstopology.graphcreator.UnweightedGraphCreator;
 import org.gdms.gdmstopology.graphcreator.WeightedGraphCreator;
 import org.gdms.gdmstopology.model.GraphException;
 import org.gdms.gdmstopology.model.GraphSchema;
+import org.jgrapht.GraphPath;
+import org.jgrapht.Graphs;
+import org.jgrapht.alg.DijkstraShortestPath;
 import org.orbisgis.progress.ProgressMonitor;
 
 /**
@@ -101,7 +99,7 @@ public class GraphPathCalculator {
         System.out.println("Created weighted graph.");
 
         // Calculate the path,
-        Path path = getPath(graph, source, target);
+        GraphPath path = getPath(graph, source, target);
 
         // Return the result.
         return getShortestPathDriver(dsf, graph, path, pm);
@@ -143,7 +141,7 @@ public class GraphPathCalculator {
         System.out.println("Created graph with all weights one.");
 
         // Calculate the path,
-        Path path = getPath(graph, source, target);
+        GraphPath path = getPath(graph, source, target);
 
         // Return the result.
         return getShortestPathDriver(dsf, graph, path, pm);
@@ -153,24 +151,17 @@ public class GraphPathCalculator {
      * Returns a shortest path from the given source vertex to the given target
      * vertex.
      *
-     * <p> <i>Note</i>: This uses a bidirectional Dijkstra search to calculate
-     * the path.
-     *
      * @param graph  The graph.
      * @param source The source vertex.
      * @param target The target vertex.
      *
      * @return A shortest path.
      */
-    private static Path getPath(Graph graph, int source, int target) {
-        DijkstraBidirectionRef algorithm = 
-                new DijkstraBidirectionRef(graph, new CarFlagEncoder());
-        long start = System.currentTimeMillis();
-        Path path = algorithm.calcPath(source, target);
-        long stop = System.currentTimeMillis();
-        System.out.println("Calculated path in " + (stop - start) + " ms.");
-//        System.out.println(path.toString());
-        System.out.println(path.toDetailsString());
+    private static GraphPath getPath(Graph graph, int source, int target) {
+        GraphPath path =
+                new DijkstraShortestPath(graph, source, target).getPath();
+        System.out.println(path);
+
         return path;
     }
 
@@ -190,7 +181,7 @@ public class GraphPathCalculator {
     private static DiskBufferDriver getShortestPathDriver(
             DataSourceFactory dsf,
             Graph graph,
-            Path path,
+            GraphPath path,
             ProgressMonitor pm) throws DriverException {
 
         // Create the metadata for the new table that will hold the 
@@ -226,26 +217,26 @@ public class GraphPathCalculator {
     private static Metadata createShortestPathMetadata() {
         Metadata md = new DefaultMetadata(
                 new Type[]{
-                    //                    TypeFactory.createType(
-                    //                    Type.GEOMETRY,
-                    //                    new Constraint[]{
-                    //                        new GeometryDimensionConstraint(
-                    //                        GeometryDimensionConstraint.DIMENSION_CURVE)
-                    //                    }),
-                    //                    TypeFactory.createType(Type.INT),
-                    TypeFactory.createType(Type.INT),
-                    TypeFactory.createType(Type.INT),
-                    TypeFactory.createType(Type.INT),
-                    TypeFactory.createType(Type.DOUBLE)
-                },
+            //                    TypeFactory.createType(
+            //                    Type.GEOMETRY,
+            //                    new Constraint[]{
+            //                        new GeometryDimensionConstraint(
+            //                        GeometryDimensionConstraint.DIMENSION_CURVE)
+            //                    }),
+            //                    TypeFactory.createType(Type.INT),
+            TypeFactory.createType(Type.INT),
+            TypeFactory.createType(Type.INT),
+            TypeFactory.createType(Type.INT),
+            TypeFactory.createType(Type.DOUBLE)
+        },
                 new String[]{
-                    //                    "the_geom",
-                    //                    GraphSchema.ID,
-                    GraphSchema.PATH_ID,
-                    GraphSchema.START_NODE,
-                    GraphSchema.END_NODE,
-                    GraphSchema.WEIGHT
-                });
+            //                    "the_geom",
+            //                    GraphSchema.ID,
+            GraphSchema.PATH_ID,
+            GraphSchema.START_NODE,
+            GraphSchema.END_NODE,
+            GraphSchema.WEIGHT
+        });
         return md;
     }
 
@@ -260,94 +251,56 @@ public class GraphPathCalculator {
      * @throws DriverException
      */
     private static void storePath(
-            Path path,
-            Graph graph,
+            GraphPath<Integer, Edge> path,
+            Graph<Integer, Edge> graph,
             DiskBufferDriver driver) throws DriverException {
-//                // Recover the edge Metadata.
-//                // TODO: Add a check to make sure the metadata was loaded correctly.
-//                Metadata edgeMetadata = dataSet.getMetadata();
-//                // Get the index of the geometry
-//                int geometryIndex = dataSet.getSpatialFieldIndex();
-//                int edgeID = edgeMetadata.getFieldIndex(GraphSchema.ID);
-//        //        int weight = edgeMetadata.getFieldIndex(GraphSchema.WEIGHT);
-
-//                int current;
-//                try {
-//                    current = path.node(0);
-//                } catch (ArrayIndexOutOfBoundsException e) {
-//                    System.out.println("There is no node(0)!");
-//                    current = 0;
-//                }
 
         long start = System.currentTimeMillis();
 
-        TIntList nodeList = path.calcNodes();
-        TIntIterator nodeListIt = nodeList.iterator();
-        if (!nodeListIt.hasNext()) {
+        if (path.getWeight() == 0.0) {
             System.out.println("The path is empty!!");
         }
-        int current = nodeListIt.next();
-        int next;
+
+        Iterator<Edge> it = path.getEdgeList().iterator();
+
         int pathEdgeID = 1;
-        while (nodeListIt.hasNext()) {
-            next = nodeListIt.next();
-            // Get the smallest edge distance.
-            double edgeLength =
-                    getSmallestEdgeDistance(graph, current, next);
+
+        int source = path.getStartVertex();
+        int target;
+
+        while (it.hasNext()) {
+
+            Edge edge = it.next();
+
+            target = Graphs.getOppositeVertex(graph, edge, source);
+
             // Store this path edge.
-            System.out.print("Adding " + current + " -> " + next
-                    + ", weight: " + edgeLength + " ... ");
+            System.out.print("Adding " + edge.toString() + " ... ");
             driver.addValues(
                     new Value[]{
-                        // the_geom
-                        //                        ValueFactory.createNullValue(),
-                        //                        // The row ID of the edge in the data source.
-                        //                        ValueFactory.createValue(currentEdge.getRowId()),
-                        // An id for this edge in the shortest path.
-                        ValueFactory.createValue(pathEdgeID),
-                        // Start node
-                        ValueFactory.createValue(current),
-                        // End node
-                        ValueFactory.createValue(next),
-                        // Weight
-                        ValueFactory.createValue(edgeLength)
-                    });
+                // the_geom
+                //                        ValueFactory.createNullValue(),
+                //                        // The row ID of the edge in the data source.
+                //                        ValueFactory.createValue(currentEdge.getRowId()),
+                // An id for this edge in the shortest path.
+                ValueFactory.createValue(pathEdgeID),
+                // Start node
+                ValueFactory.createValue(source),
+                // End node
+                ValueFactory.createValue(target),
+                // Weight
+                ValueFactory.createValue(graph.getEdgeWeight(edge))
+            });
             System.out.println("DONE!");
-            current = next;
+
+            source = target;
+
             pathEdgeID++;
         }
 
         long stop = System.currentTimeMillis();
         System.out.println("Stored path in " + (stop - start) + " ms.");
 
-    }
-
-    /**
-     * Returns the smallest edge distance from the given source vertex to the
-     * given target vertex.
-     *
-     * @param graph  The graph.
-     * @param source The source vertex.
-     * @param target The target vertex.
-     *
-     * @return The smallest edge distance from the given source vertex to the
-     *         given target vertex.
-     */
-    private static double getSmallestEdgeDistance(
-            Graph graph,
-            int source,
-            int target) {
-        // Obtain the smallest weight for this edge.
-        EdgeIterator outgoingEdges = GHUtility.getCarOutgoing(graph, source);
-        double smallestDistance = Double.MAX_VALUE;
-        while (outgoingEdges.next()) {
-            if (outgoingEdges.node() == target) {
-                if (outgoingEdges.distance() < smallestDistance) {
-                    smallestDistance = outgoingEdges.distance();
-                }
-            }
-        }
-        return smallestDistance;
     }
 
     /**
