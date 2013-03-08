@@ -32,10 +32,13 @@
  */
 package org.gdms.gdmstopology.graphcreator;
 
-import com.graphhopper.storage.Graph;
+import com.graphhopper.sna.model.Edge;
 import java.util.Iterator;
 import org.gdms.data.values.Value;
 import org.gdms.driver.DataSet;
+import org.jgrapht.DirectedGraph;
+import org.jgrapht.UndirectedGraph;
+import org.jgrapht.WeightedGraph;
 
 /**
  * Creates a weighted graph with a specified orientation from the given
@@ -72,20 +75,29 @@ public class WeightedGraphCreator extends GraphCreator {
     }
 
     /**
-     * {@inheritDoc}
+     * Loads weighted edges.
+     *
+     * @param scanner The scanner that will parse the csv file.
+     * @param graph   The graph to which the edges will be added.
+     * @param reverse {@code true} iff the edge orientation should be reversed.
      */
-    @Override
-    protected void loadDirectedEdges(Graph graph,
-                                     int startNodeIndex,
-                                     int endNodeIndex,
-                                     int weightFieldIndex) {
+    private void loadWeightedEdges(WeightedGraph graph,
+                                   int startNodeIndex,
+                                   int endNodeIndex,
+                                   int weightFieldIndex) {
         Iterator<Value[]> iterator = dataSet.iterator();
         while (iterator.hasNext()) {
             Value[] row = iterator.next();
-            graph.edge(row[startNodeIndex].getAsInt(),
-                       row[endNodeIndex].getAsInt(),
-                       row[weightFieldIndex].getAsDouble(),
-                       false);
+            int startNode = row[startNodeIndex].getAsInt();
+            int endNode = row[endNodeIndex].getAsInt();
+            double weight = row[weightFieldIndex].getAsDouble();
+            // Add the nodes to the graph.
+            graph.addVertex(startNode);
+            graph.addVertex(endNode);
+            // Add the unweighted edge to the graph and set the edge weight.
+            // TODO: This doesn't work: graph.setEdgeWeight(
+            // graph.addEdge(startNode, endNode), weight);
+            ((Edge) graph.addEdge(startNode, endNode)).setWeight(weight);
         }
     }
 
@@ -93,17 +105,23 @@ public class WeightedGraphCreator extends GraphCreator {
      * {@inheritDoc}
      */
     @Override
-    protected void loadUndirectedEdges(Graph graph,
+    protected void loadDirectedEdges(DirectedGraph graph,
+                                     int startNodeIndex,
+                                     int endNodeIndex,
+                                     int weightFieldIndex) {
+        loadWeightedEdges((WeightedGraph) graph,
+                          startNodeIndex, endNodeIndex, weightFieldIndex);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void loadUndirectedEdges(UndirectedGraph graph,
                                        int startNodeIndex,
                                        int endNodeIndex,
                                        int weightFieldIndex) {
-        Iterator<Value[]> iterator = dataSet.iterator();
-        while (iterator.hasNext()) {
-            Value[] row = iterator.next();
-            graph.edge(row[startNodeIndex].getAsInt(),
-                       row[endNodeIndex].getAsInt(),
-                       row[weightFieldIndex].getAsDouble(),
-                       true);
-        }
+        loadWeightedEdges((WeightedGraph) graph,
+                          startNodeIndex, endNodeIndex, weightFieldIndex);
     }
 }

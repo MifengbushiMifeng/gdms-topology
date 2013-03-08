@@ -32,9 +32,8 @@
  */
 package org.gdms.gdmstopology.graphcreator;
 
-import com.graphhopper.storage.Graph;
-import com.graphhopper.storage.GraphStorage;
-import com.graphhopper.storage.RAMDirectory;
+import com.graphhopper.sna.model.Edge;
+import org.jgrapht.Graph;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.gdms.data.indexes.IndexException;
@@ -43,6 +42,12 @@ import org.gdms.driver.DataSet;
 import org.gdms.driver.DriverException;
 import org.gdms.gdmstopology.model.GraphException;
 import org.gdms.gdmstopology.model.GraphSchema;
+import org.jgrapht.DirectedGraph;
+import org.jgrapht.UndirectedGraph;
+import org.jgrapht.graph.DirectedMultigraph;
+import org.jgrapht.graph.DirectedWeightedMultigraph;
+import org.jgrapht.graph.Multigraph;
+import org.jgrapht.graph.WeightedMultigraph;
 
 /**
  * Creates a graph with a specified orientation from the given {@link DataSet}.
@@ -59,6 +64,18 @@ public abstract class GraphCreator {
      * Orientation.
      */
     protected final int orientation;
+    /**
+     * Specifies a directed graph.
+     */
+    public static final int DIRECTED = 1;
+    /**
+     * Specifies a directed graph with reversed edge orientation.
+     */
+    public static final int REVERSED = 2;
+    /**
+     * Specifies an undirected graph.
+     */
+    public static final int UNDIRECTED = 3;
     /**
      * An error message given when a user inputs an erroneous graph orientation.
      */
@@ -81,11 +98,6 @@ public abstract class GraphCreator {
      */
     public final static String MISSING_FIELD_ERROR =
             "The input table must contain the field \'";
-    /**
-     * Used to allocate enough space for the GraphHopper graph.
-     */
-    // TODO: How big does this need to be?
-    protected final static int ALLOCATE_GRAPH_SPACE = 10;
 
     /**
      * Constructs a new {@link GraphCreator}.
@@ -137,8 +149,8 @@ public abstract class GraphCreator {
 
         // GRAPH CREATION
         // Initialize the graph.
-        GraphStorage graph = new GraphStorage(new RAMDirectory());
-        graph.createNew(ALLOCATE_GRAPH_SPACE);
+        Graph<Integer, Edge> graph = initializeGraph(weightColumnName,
+                                                     orientation);
         try {
             // Add the edges according to the given graph type.
             loadEdges(graph, orientation,
@@ -158,6 +170,35 @@ public abstract class GraphCreator {
     protected abstract String getWeightColumnName();
 
     /**
+     * Initializes a JGraphT graph according to the given weight column name and
+     * orientation.
+     *
+     * @param weightColumnName The weight column name.
+     * @param orientation      The orientation.
+     *
+     * @return The newly initialized graph.
+     */
+    private Graph initializeGraph(
+            String weightColumnName,
+            int orientation) {
+        // Unweighted
+        if (weightColumnName == null) {
+            if (orientation != UNDIRECTED) {
+                return new DirectedMultigraph(Edge.class);
+            } else {
+                return new Multigraph(Edge.class);
+            }
+        } // Weighted
+        else {
+            if (orientation != UNDIRECTED) {
+                return new DirectedWeightedMultigraph(Edge.class);
+            } else {
+                return new WeightedMultigraph(Edge.class);
+            }
+        }
+    }
+
+    /**
      * Loads the graph edges with the appropriate orientation.
      *
      * @param graph            The graph.
@@ -174,13 +215,13 @@ public abstract class GraphCreator {
                            int weightFieldIndex) throws
             GraphException {
         if (orientation == GraphSchema.DIRECT) {
-            loadDirectedEdges(graph,
+            loadDirectedEdges((DirectedGraph) graph,
                               startNodeIndex, endNodeIndex, weightFieldIndex);
         } else if (orientation == GraphSchema.DIRECT_REVERSED) {
-            loadReversedEdges(graph,
+            loadReversedEdges((DirectedGraph) graph,
                               startNodeIndex, endNodeIndex, weightFieldIndex);
         } else if (orientation == GraphSchema.UNDIRECT) {
-            loadUndirectedEdges(graph,
+            loadUndirectedEdges((UndirectedGraph) graph,
                                 startNodeIndex, endNodeIndex, weightFieldIndex);
         } else {
             throw new GraphException(GRAPH_TYPE_ERROR);
@@ -196,7 +237,7 @@ public abstract class GraphCreator {
      * @param endNodeIndex     The end node index.
      * @param weightFieldIndex The weight field index.
      */
-    protected abstract void loadDirectedEdges(Graph graph,
+    protected abstract void loadDirectedEdges(DirectedGraph graph,
                                               int startNodeIndex,
                                               int endNodeIndex,
                                               int weightFieldIndex);
@@ -209,7 +250,7 @@ public abstract class GraphCreator {
      * @param endNodeIndex     The end node index.
      * @param weightFieldIndex The weight field index.
      */
-    private void loadReversedEdges(Graph graph,
+    private void loadReversedEdges(DirectedGraph graph,
                                    int startNodeIndex,
                                    int endNodeIndex,
                                    int weightFieldIndex) {
@@ -225,7 +266,7 @@ public abstract class GraphCreator {
      * @param endNodeIndex     The end node index.
      * @param weightFieldIndex The weight field index.
      */
-    protected abstract void loadUndirectedEdges(Graph graph,
+    protected abstract void loadUndirectedEdges(UndirectedGraph graph,
                                                 int startNodeIndex,
                                                 int endNodeIndex,
                                                 int weightFieldIndex);

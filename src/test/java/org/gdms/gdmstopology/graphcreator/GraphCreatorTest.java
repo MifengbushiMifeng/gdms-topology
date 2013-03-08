@@ -32,9 +32,10 @@
  */
 package org.gdms.gdmstopology.graphcreator;
 
-import com.graphhopper.storage.Graph;
-import com.graphhopper.util.EdgeIterator;
-import com.graphhopper.util.GHUtility;
+import com.graphhopper.sna.model.Edge;
+import java.util.Iterator;
+import java.util.Set;
+import org.jgrapht.Graph;
 import org.gdms.data.DataSource;
 import org.gdms.data.DataSourceCreationException;
 import org.gdms.data.NoSuchTableException;
@@ -43,7 +44,7 @@ import org.gdms.driver.DriverException;
 import org.gdms.gdmstopology.TopologySetupTest;
 import org.gdms.gdmstopology.model.GraphSchema;
 import org.gdms.sql.function.FunctionException;
-import org.junit.Test;
+import org.jgrapht.UndirectedGraph;
 
 /**
  * Tests {@link GraphCreator}.
@@ -51,12 +52,6 @@ import org.junit.Test;
  * @author Adam Gouge
  */
 public abstract class GraphCreatorTest extends TopologySetupTest {
-
-    /**
-     * A switch to control whether or not we print out all edges when running
-     * tests.
-     */
-    private static final boolean VERBOSE = false;
 
     /**
      * Instantiates an appropriate {@link GraphCreator} and prepares the graph.
@@ -70,8 +65,10 @@ public abstract class GraphCreatorTest extends TopologySetupTest {
      * @throws DriverException
      * @throws FunctionException
      */
-    public void testGraphCreator(DataSource ds, int orientation,
-                                 String weightColumnName)
+    public void testGraphCreator(DataSource ds,
+                                 int orientation,
+                                 String weightColumnName,
+                                 boolean printGraph)
             throws
             NoSuchTableException,
             DataSourceCreationException,
@@ -84,31 +81,35 @@ public abstract class GraphCreatorTest extends TopologySetupTest {
                 : new WeightedGraphCreator(ds, orientation, weightColumnName);
         Graph graph = creator.prepareGraph();
 
-        if (VERBOSE) {
-            System.out.println("\n Orientation: " + orientation);
-            printAllEdges(graph);
+        if (printGraph) {
+            printEdges(graph);
         }
     }
 
     /**
-     * Prints all edges of the given graph.
-     *
-     * @param graph
+     * Indicates whether the graph should be printed.
      */
-    private void printAllEdges(Graph graph) {
-        for (int i = 0; i < graph.nodes(); i++) {
-            EdgeIterator incoming = GHUtility.getCarIncoming(graph, i);
-            while (incoming.next()) {
-                System.out.print(i + " <- " + incoming.node()
-                        + " (" + incoming.distance() + "); ");
+    protected abstract boolean printsGraph();
+
+    /**
+     * Prints all edges of the graph.
+     *
+     * @param graph The graph.
+     */
+    private void printEdges(Graph graph) {
+        Set<Edge> edgeSet = graph.edgeSet();
+        Iterator<Edge> iterator = edgeSet.iterator();
+        while (iterator.hasNext()) {
+            Edge edge = iterator.next();
+            String edgeString = graph.getEdgeSource(edge).toString() + " ";
+            if (graph instanceof UndirectedGraph) {
+                edgeString += "<";
             }
-            EdgeIterator outgoing = GHUtility.getCarOutgoing(graph, i);
-            while (outgoing.next()) {
-                System.out.print(i + " -> " + outgoing.node()
-                        + " (" + outgoing.distance() + "); ");
-            }
-            System.out.println("");
+            edgeString += "--> " + graph.getEdgeTarget(edge)
+                    + " (" + graph.getEdgeWeight(edge) + ")";
+            System.out.println(edgeString);
         }
+        System.out.println("");
     }
 
     /**
@@ -129,7 +130,7 @@ public abstract class GraphCreatorTest extends TopologySetupTest {
             DriverException,
             FunctionException,
             IndexException {
-        testGraphCreator(ds, GraphSchema.DIRECT, weightColumnName);
+        testGraphCreator(ds, GraphSchema.DIRECT, weightColumnName, printsGraph());
     }
 
     /**
@@ -150,7 +151,8 @@ public abstract class GraphCreatorTest extends TopologySetupTest {
             DriverException,
             FunctionException,
             IndexException {
-        testGraphCreator(ds, GraphSchema.DIRECT_REVERSED, weightColumnName);
+        testGraphCreator(ds, GraphSchema.DIRECT_REVERSED, weightColumnName,
+                         printsGraph());
     }
 
     /**
@@ -171,73 +173,7 @@ public abstract class GraphCreatorTest extends TopologySetupTest {
             DriverException,
             FunctionException,
             IndexException {
-        testGraphCreator(ds, GraphSchema.UNDIRECT, weightColumnName);
+        testGraphCreator(ds, GraphSchema.UNDIRECT, weightColumnName,
+                         printsGraph());
     }
-
-    /**
-     * Gets the data source for the 2D graph.
-     *
-     * @return The data source for the 2D graph.
-     *
-     * @throws NoSuchTableException
-     * @throws DataSourceCreationException
-     * @throws DriverException
-     */
-    public DataSource get2DGraphDataSource() throws
-            NoSuchTableException,
-            DataSourceCreationException,
-            DriverException {
-        DataSource ds = dsf.getDataSource(GRAPH2D_EDGES);
-        ds.open();
-        return ds;
-    }
-
-    /**
-     * Tests creating the 2D directed graph.
-     *
-     * @throws NoSuchTableException
-     * @throws DataSourceCreationException
-     * @throws DriverException
-     * @throws FunctionException
-     */
-    @Test
-    public abstract void test2DGraphDirected() throws
-            NoSuchTableException,
-            DataSourceCreationException,
-            DriverException,
-            FunctionException,
-            IndexException;
-
-    /**
-     * Tests creating the 2D directed graph with edges reversed.
-     *
-     *
-     * @throws NoSuchTableException
-     * @throws DataSourceCreationException
-     * @throws DriverException
-     * @throws FunctionException
-     */
-    @Test
-    public abstract void test2DGraphReversed() throws
-            NoSuchTableException,
-            DataSourceCreationException,
-            DriverException,
-            FunctionException,
-            IndexException;
-
-    /**
-     * Tests creating the 2D undirected graph.
-     *
-     * @throws NoSuchTableException
-     * @throws DataSourceCreationException
-     * @throws DriverException
-     * @throws FunctionException
-     */
-    @Test
-    public abstract void test2DGraphUndirected() throws
-            NoSuchTableException,
-            DataSourceCreationException,
-            DriverException,
-            FunctionException,
-            IndexException;
 }

@@ -32,10 +32,12 @@
  */
 package org.gdms.gdmstopology.graphcreator;
 
-import com.graphhopper.storage.Graph;
+import org.jgrapht.Graph;
 import java.util.Iterator;
 import org.gdms.data.values.Value;
 import org.gdms.driver.DataSet;
+import org.jgrapht.DirectedGraph;
+import org.jgrapht.UndirectedGraph;
 
 /**
  * Creates an unweighted graph with a specified orientation from the given
@@ -71,21 +73,25 @@ public class UnweightedGraphCreator extends GraphCreator {
     }
 
     /**
-     * {@inheritDoc}
+     * Loads unweighted edges.
+     *
+     * @param graph          The graph.
+     * @param startNodeIndex The start node index.
+     * @param endNodeIndex   The end node index.
      */
-    @Override
-    protected void loadDirectedEdges(Graph graph,
+    private void loadUnweightedEdges(Graph graph,
                                      int startNodeIndex,
-                                     int endNodeIndex,
-                                     int weightFieldIndex) {
-        // The weightFieldIndex is ignored.
+                                     int endNodeIndex) {
         Iterator<Value[]> iterator = dataSet.iterator();
         while (iterator.hasNext()) {
             Value[] row = iterator.next();
-            graph.edge(row[startNodeIndex].getAsInt(),
-                       row[endNodeIndex].getAsInt(),
-                       ALL_WEIGHTS_ONE,
-                       false);
+            int startNode = row[startNodeIndex].getAsInt();
+            int endNode = row[endNodeIndex].getAsInt();
+            // Add the nodes to the graph.
+            graph.addVertex(startNode);
+            graph.addVertex(endNode);
+            // Add the unweighted edge to the graph.
+            graph.addEdge(startNode, endNode);
         }
     }
 
@@ -93,18 +99,23 @@ public class UnweightedGraphCreator extends GraphCreator {
      * {@inheritDoc}
      */
     @Override
-    protected void loadUndirectedEdges(Graph graph,
+    protected void loadDirectedEdges(DirectedGraph graph,
+                                     int startNodeIndex,
+                                     int endNodeIndex,
+                                     int weightFieldIndex) {
+        // The weightFieldIndex is ignored.
+        loadUnweightedEdges(graph, startNodeIndex, endNodeIndex);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void loadUndirectedEdges(UndirectedGraph graph,
                                        int startNodeIndex,
                                        int endNodeIndex,
                                        int weightFieldIndex) {
         // The weightFieldIndex is ignored.
-        Iterator<Value[]> iterator = dataSet.iterator();
-        while (iterator.hasNext()) {
-            Value[] row = iterator.next();
-            graph.edge(row[startNodeIndex].getAsInt(),
-                       row[endNodeIndex].getAsInt(),
-                       ALL_WEIGHTS_ONE,
-                       true);
-        }
+        loadUnweightedEdges(graph, startNodeIndex, endNodeIndex);
     }
 }

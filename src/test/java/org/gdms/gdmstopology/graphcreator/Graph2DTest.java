@@ -32,6 +32,7 @@
  */
 package org.gdms.gdmstopology.graphcreator;
 
+import org.gdms.data.DataSource;
 import org.gdms.data.DataSourceCreationException;
 import org.gdms.data.NoSuchTableException;
 import org.gdms.data.indexes.IndexException;
@@ -40,44 +41,87 @@ import org.gdms.sql.function.FunctionException;
 import org.junit.Test;
 
 /**
- * Tests {@link WeightedGraphCreator}.
+ * Tests creating the 2D Graph under all possible configurations (weighted or
+ * unweighted; directed, reversed or undirected).
  *
  * @author Adam Gouge
  */
-public class WeightedGraphCreatorTest extends GraphCreatorTest {
+public class Graph2DTest extends GraphCreatorTest {
 
     private static final String LENGTH = "length";
+    private static final String NO_WEIGHT = null;
 
     /**
      * {@inheritDoc}
      */
-    @Test
     @Override
-    public void test2DGraphDirected() throws NoSuchTableException,
+    protected boolean printsGraph() {
+        return true;
+    }
+
+    @Test
+    public void unweightedDirected() throws NoSuchTableException,
             DataSourceCreationException, DriverException, FunctionException,
             IndexException {
+        System.out.println("\n***** 2D Unweighted Directed *****");
+        testGraphCreatorDirected(get2DGraphDataSource(), NO_WEIGHT);
+    }
+
+    @Test
+    public void unweightedReversed() throws NoSuchTableException,
+            DataSourceCreationException, DriverException, FunctionException,
+            IndexException {
+        System.out.println("\n***** 2D Unweighted Reversed *****");
+        testGraphCreatorReversed(get2DGraphDataSource(), NO_WEIGHT);
+    }
+
+    @Test
+    public void unweightedUndirected() throws NoSuchTableException,
+            DataSourceCreationException, DriverException, FunctionException,
+            IndexException {
+        System.out.println("\n***** 2D Unweighted Undirected *****");
+        testGraphCreatorUndirected(get2DGraphDataSource(), NO_WEIGHT);
+    }
+
+    @Test
+    public void weightedDirected() throws NoSuchTableException,
+            DataSourceCreationException, DriverException, FunctionException,
+            IndexException {
+        System.out.println("\n***** 2D Weighted Directed *****");
         testGraphCreatorDirected(get2DGraphDataSource(), LENGTH);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Test
-    @Override
-    public void test2DGraphReversed() throws NoSuchTableException,
+    public void weightedReversed() throws NoSuchTableException,
             DataSourceCreationException, DriverException, FunctionException,
             IndexException {
+        System.out.println("\n***** 2D Weighted Reversed *****");
         testGraphCreatorReversed(get2DGraphDataSource(), LENGTH);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Test
-    @Override
-    public void test2DGraphUndirected() throws NoSuchTableException,
+    public void weightedUndirected() throws NoSuchTableException,
             DataSourceCreationException, DriverException, FunctionException,
             IndexException {
+        System.out.println("\n***** 2D Weighted Undirected *****");
         testGraphCreatorUndirected(get2DGraphDataSource(), LENGTH);
+    }
+
+    /**
+     * Gets the data source for the 2D graph.
+     *
+     * @return The data source for the 2D graph.
+     *
+     * @throws NoSuchTableException
+     * @throws DataSourceCreationException
+     * @throws DriverException
+     */
+    public DataSource get2DGraphDataSource() throws
+            NoSuchTableException,
+            DataSourceCreationException,
+            DriverException {
+        DataSource ds = dsf.getDataSource(GRAPH2D_EDGES);
+        ds.open();
+        return ds;
     }
 }
