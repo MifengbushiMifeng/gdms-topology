@@ -45,6 +45,8 @@ import org.gdms.gdmstopology.TopologySetupTest;
 import org.gdms.gdmstopology.model.GraphSchema;
 import org.gdms.sql.function.FunctionException;
 import org.jgrapht.UndirectedGraph;
+import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.DefaultWeightedEdge;
 
 /**
  * Tests {@link GraphCreator}.
@@ -96,11 +98,11 @@ public abstract class GraphCreatorTest extends TopologySetupTest {
      *
      * @param graph The graph.
      */
-    private void printEdges(Graph graph) {
-        Set<Edge> edgeSet = graph.edgeSet();
-        Iterator<Edge> iterator = edgeSet.iterator();
+    private void printEdges(Graph<Integer, DefaultEdge> graph) {
+        Set<DefaultEdge> edgeSet = graph.edgeSet();
+        Iterator<DefaultEdge> iterator = edgeSet.iterator();
         while (iterator.hasNext()) {
-            Edge edge = iterator.next();
+            DefaultEdge edge = iterator.next();
             String edgeString = graph.getEdgeSource(edge).toString() + " ";
             if (graph instanceof UndirectedGraph) {
                 edgeString += "<";

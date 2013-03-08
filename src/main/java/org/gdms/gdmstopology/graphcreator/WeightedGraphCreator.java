@@ -95,9 +95,7 @@ public class WeightedGraphCreator extends GraphCreator {
             graph.addVertex(startNode);
             graph.addVertex(endNode);
             // Add the unweighted edge to the graph and set the edge weight.
-            // TODO: This doesn't work: graph.setEdgeWeight(
-            // graph.addEdge(startNode, endNode), weight);
-            ((Edge) graph.addEdge(startNode, endNode)).setWeight(weight);
+            graph.setEdgeWeight(graph.addEdge(startNode, endNode), weight);
         }
     }
 

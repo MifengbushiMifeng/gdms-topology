@@ -32,7 +32,6 @@
  */
 package org.gdms.gdmstopology.process;
 
-import com.graphhopper.sna.model.Edge;
 import org.jgrapht.Graph;
 import java.util.Iterator;
 import org.gdms.data.DataSourceFactory;
@@ -53,6 +52,7 @@ import org.gdms.gdmstopology.model.GraphSchema;
 import org.jgrapht.GraphPath;
 import org.jgrapht.Graphs;
 import org.jgrapht.alg.DijkstraShortestPath;
+import org.jgrapht.graph.DefaultEdge;
 import org.orbisgis.progress.ProgressMonitor;
 
 /**
@@ -215,30 +215,24 @@ public class GraphPathCalculator {
      * @return The metadata model used to store the shortest path in a
      *         {@link DiskBufferDriver}.
      */
+    //                    TypeFactory.createType(
+    //                    Type.GEOMETRY,
+    //                    new Constraint[]{
+    //                        new GeometryDimensionConstraint(
+    //                        GeometryDimensionConstraint.DIMENSION_CURVE)
+    //                    }),
     private static Metadata createShortestPathMetadata() {
-        Metadata md = new DefaultMetadata(
+        return new DefaultMetadata(
                 new Type[]{
-            //                    TypeFactory.createType(
-            //                    Type.GEOMETRY,
-            //                    new Constraint[]{
-            //                        new GeometryDimensionConstraint(
-            //                        GeometryDimensionConstraint.DIMENSION_CURVE)
-            //                    }),
-            //                    TypeFactory.createType(Type.INT),
             TypeFactory.createType(Type.INT),
             TypeFactory.createType(Type.INT),
             TypeFactory.createType(Type.INT),
-            TypeFactory.createType(Type.DOUBLE)
-        },
+            TypeFactory.createType(Type.DOUBLE)},
                 new String[]{
-            //                    "the_geom",
-            //                    GraphSchema.ID,
             GraphSchema.PATH_ID,
             GraphSchema.START_NODE,
             GraphSchema.END_NODE,
-            GraphSchema.WEIGHT
-        });
-        return md;
+            GraphSchema.WEIGHT});
     }
 
     /**
@@ -252,33 +246,32 @@ public class GraphPathCalculator {
      * @throws DriverException
      */
     private static void storePath(
-            GraphPath<Integer, Edge> path,
-            Graph<Integer, Edge> graph,
+            GraphPath<Integer, DefaultEdge> path,
+            Graph<Integer, DefaultEdge> graph,
             DiskBufferDriver driver) throws DriverException {
 
         long start = System.currentTimeMillis();
 
-        Iterator<Edge> it = path.getEdgeList().iterator();
+        Iterator<DefaultEdge> it = path.getEdgeList().iterator();
 
         int pathEdgeID = 1;
 
         int source = path.getStartVertex();
         int target;
+        double weight;
 
         while (it.hasNext()) {
 
-            Edge edge = it.next();
+            DefaultEdge edge = it.next();
 
             target = Graphs.getOppositeVertex(graph, edge, source);
+            weight = graph.getEdgeWeight(edge);
 
             // Store this path edge.
-            System.out.print("Adding " + edge.toString() + " ... ");
+            System.out.print("Adding " + source + " --> " + target
+                    + " (" + weight + ") ... ");
             driver.addValues(
                     new Value[]{
-                // the_geom
-                //                        ValueFactory.createNullValue(),
-                //                        // The row ID of the edge in the data source.
-                //                        ValueFactory.createValue(currentEdge.getRowId()),
                 // An id for this edge in the shortest path.
                 ValueFactory.createValue(pathEdgeID),
                 // Start node
@@ -286,7 +279,7 @@ public class GraphPathCalculator {
                 // End node
                 ValueFactory.createValue(target),
                 // Weight
-                ValueFactory.createValue(graph.getEdgeWeight(edge))
+                ValueFactory.createValue(weight)
             });
             System.out.println("DONE!");
 
@@ -351,5 +344,6 @@ public class GraphPathCalculator {
         long stop = System.currentTimeMillis();
         System.out.println("Finished printing in " + (stop - start) + " ms.");
         driver.close();
+        System.out.println("Closed disk buffer driver.");
     }
 }

@@ -44,6 +44,8 @@ import org.gdms.gdmstopology.model.GraphException;
 import org.gdms.gdmstopology.model.GraphSchema;
 import org.jgrapht.DirectedGraph;
 import org.jgrapht.UndirectedGraph;
+import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.DefaultWeightedEdge;
 import org.jgrapht.graph.DirectedMultigraph;
 import org.jgrapht.graph.DirectedWeightedMultigraph;
 import org.jgrapht.graph.Multigraph;
@@ -184,16 +186,16 @@ public abstract class GraphCreator {
         // Unweighted
         if (weightColumnName == null) {
             if (orientation != UNDIRECTED) {
-                return new DirectedMultigraph(Edge.class);
+                return new DirectedMultigraph(DefaultEdge.class);
             } else {
-                return new Multigraph(Edge.class);
+                return new Multigraph(DefaultEdge.class);
             }
         } // Weighted
         else {
             if (orientation != UNDIRECTED) {
-                return new DirectedWeightedMultigraph(Edge.class);
+                return new DirectedWeightedMultigraph(DefaultWeightedEdge.class);
             } else {
-                return new WeightedMultigraph(Edge.class);
+                return new WeightedMultigraph(DefaultWeightedEdge.class);
             }
         }
     }
