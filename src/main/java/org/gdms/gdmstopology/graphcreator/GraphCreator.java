@@ -181,7 +181,9 @@ public class GraphCreator<V extends VId, E extends Edge> {
      */
     private KeyedGraph<V, E> loadEdges(KeyedGraph<V, E> graph) {
         if (edgeOrientationIndex == -1 && globalOrientation != UNDIRECTED) {
-            LOGGER.warn("Assuming all edges are directed.");
+            LOGGER.warn("Assuming all edges are directed. If you want to "
+                        + "specify edge orientations, insert them in a column "
+                        + "named \'" + GraphSchema.EDGE_ORIENTATION + "\'.");
         }
         for (Value[] row : dataSet) {
             loadEdge(row, graph);
