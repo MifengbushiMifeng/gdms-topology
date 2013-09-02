@@ -1,4 +1,4 @@
-# H2Topology [![Build  Status](https://travis-ci.org/irstv/gdms-topology.png?branch=master)](https://travis-ci.org/irstv/gdms-topology)
+# H2Topology [![Build  Status](https://travis-ci.org/agouge/gdms-topology.png?branch=60)](https://travis-ci.org/agouge/gdms-topology)
 
 H2Topology is an [OSGi](http://www.osgi.org/Main/HomePage) plugin that brings
 shortest path calculations and network analysis functionality to
