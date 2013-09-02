@@ -1,8 +1,8 @@
-# GDMS-Topology [![Build  Status](https://travis-ci.org/irstv/gdms-topology.png?branch=master)](https://travis-ci.org/irstv/gdms-topology)
+# H2Topology [![Build  Status](https://travis-ci.org/irstv/gdms-topology.png?branch=master)](https://travis-ci.org/irstv/gdms-topology)
 
-GDMS-Topology is an [OSGi](http://www.osgi.org/Main/HomePage) plugin that brings
+H2Topology is an [OSGi](http://www.osgi.org/Main/HomePage) plugin that brings
 shortest path calculations and network analysis functionality to
-[OrbisGIS](http://www.orbisgis.org/).Underneath the hood, GDMS-Topology uses
+[OrbisGIS](http://www.orbisgis.org/).Underneath the hood, H2Topology uses
 [Java-Network-Analyzer](https://github.com/agouge/Java-Network-Analyzer).
 
 Networks (transportation, hydrological, etc.) are represented as [mathematical
