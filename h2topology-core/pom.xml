@@ -53,6 +53,11 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>org.h2gis</groupId>
+            <artifactId>spatial-utilities</artifactId>
+            <version>0.1.1</version>
+        </dependency>
+        <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
             <version>1.6.0</version>
